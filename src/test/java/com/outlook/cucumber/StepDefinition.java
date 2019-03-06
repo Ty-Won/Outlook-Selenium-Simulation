@@ -1,8 +1,11 @@
 package com.outlook.cucumber;
 
 import cucumber.api.java8.En;
+import org.openqa.selenium.chrome.ChromeDriver;
 
 public class StepDefinition implements En{
+  
+  
   public StepDefinition() {
 
     Given("I am on the McGill Outlook Email page", () -> {
