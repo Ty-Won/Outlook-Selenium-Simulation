@@ -1,18 +1,17 @@
 Feature: Outlook
 
 	#basic flow
-	Scenario: Adding the image as an attachment to the email and sending it
-		Given that I have a new email draft open on the McGill Outlook Email page
-		And I fill out the necessary email recipient credentials
-		When I click attachments
-		And attach an image
-		Then the email can be sent along with the image
+	Scenario: Sending an email with an attachment
+		Given a valid user with an email draft open in the McGill Outlook Email page
+		When they send an email to <address>
+		And an <image> is attached
+		Then the email can be viewed in the sent section to <address> with <image> attached
 
   	#Error flow
 	Scenario: Adding in an image that exceeds the size limit
-		Given that I have a new email draft open on the McGill Outlook Email page
-		And I fill out the necessary email recipient credentials
-		When I click attachments
-		And attach a large image
-		Then outlook provides me with an image size error
-		And I cannot attach the photo to send
+		Given a valid user with an email draft open in the McGill Outlook Email page
+		When they send an email to <address>
+		And an <image> is attached
+		Then outlook throws a size error for <image>
+
+
