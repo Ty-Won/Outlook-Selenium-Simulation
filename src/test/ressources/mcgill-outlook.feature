@@ -9,7 +9,7 @@ Feature: Outlook
 		
 	Examples:
 		| 			username 			| password  | address 			 						 | imagePath 											|
-		| ecse428@hotmail.com | 1234Test  | ecse428receive@hotmail.com | /SEP-Assignment-B/src/test/resources/cat.jpg |
+		| ecse428@hotmail.com | 1234Test  | ecse428receive@hotmail.com | src/test/ressources/cat.jpg |
 		
   #Error flow
 	Scenario Outline: Adding in an image that exceeds the size limit

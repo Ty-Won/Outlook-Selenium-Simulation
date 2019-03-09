@@ -1,7 +1,14 @@
 package com.outlook.cucumber;
 
 import static io.github.bonigarcia.wdm.DriverManagerType.CHROME;
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -20,7 +27,8 @@ public class StepDefinition {
   private final String MCGILL_OUTLOOK_SENT_EMAILS_URL =
       "https://outlook.office.com/owa/?realm=mcgill.ca&path=/mail/sentitems";
 
-  private final String OUTLOOK_SIGN_IN = "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
+  private final String OUTLOOK_SIGN_IN =
+      "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
 
   private WebDriver driver;
 
@@ -40,37 +48,58 @@ public class StepDefinition {
     emailForm.sendKeys(username);
 
     // Next button to pass to password form
-    driver.findElement(By.id("idSIButton9")).click();
+    (new WebDriverWait(driver, 10))
+        .until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
 
     WebElement passwordForm = (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("i0118")));
-    
+        .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
+    passwordForm.click();
+    passwordForm.clear();
     passwordForm.sendKeys(password);
 
     // Sign in button, takes time to appear
-    (new WebDriverWait(driver, 10))
-    .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
-    
+    (new WebDriverWait(driver, 15))
+        .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
+
 
     // Wait for the page to load and try to find the new email button
-    WebElement newEmailButton = (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5")));
-    newEmailButton.click();
+    (new WebDriverWait(driver, 15))
+        .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
   }
 
   @And("^image at (.*) is attached$")
   public void attachImage(String path) {
-    WebElement btn = driver.findElements(By.className("_mcp_92")).get(0);
-    btn.click();
-    System.out.println("Clicking the attachments button");
 
-    JavascriptExecutor js = (JavascriptExecutor) driver;
-    js.executeScript("document.querySelector(\"button[autoid='_fce_6']\").click();");
+    // Attachment button
+    (new WebDriverWait(driver, 10))
+        .until(ExpectedConditions.elementToBeClickable(
+            By.cssSelector(".ms-Button-menuIcon.menuIcon-146[data-icon-name=ChevronDown]")))
+        .click();
 
-    /*********************** Swap to directory where image is located ***********************/
+    System.out.println("Clicked attachment button");
+
+    WebElement thisCPButton = driver.findElements(By.className("label-193")).get(0);
+    thisCPButton.click();
+
+    Path relativePath = Paths.get("").toAbsolutePath();
+    String fullPath = relativePath.resolve(path).toString();
+
+    StringSelection ss = new StringSelection(fullPath);
+    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+    Robot robot;
     try {
-      Process p = Runtime.getRuntime().exec(path);
-    } catch (IOException e) {
+      robot = new Robot();
+      Thread.sleep(1000);
+      robot.keyPress(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_ENTER);
+      robot.keyRelease(KeyEvent.VK_ENTER);
+    } catch (AWTException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
@@ -78,8 +107,18 @@ public class StepDefinition {
 
   @When("^they send an email to (.*)$")
   public void sendEmail(String recipientEmail) {
-    WebElement email_field = driver.findElements(By.className("_fp_5")).get(0);
+    WebElement email_field =
+        driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
     email_field.sendKeys(recipientEmail);
+    
+    driver.findElement(By.id("subjectLine0")).sendKeys("Subject");
+
+    (new WebDriverWait(driver, 10))
+        .until(ExpectedConditions
+            .elementToBeClickable(By.cssSelector(".ms-Button-icon.icon-145[data-icon-name=Send]")))
+        .click();
+
+
   }
 
 
