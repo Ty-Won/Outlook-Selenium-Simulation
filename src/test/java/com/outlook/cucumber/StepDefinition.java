@@ -23,12 +23,9 @@ import cucumber.api.java.en.When;
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class StepDefinition {
-  private final String MCGILL_OUTLOOK_URL = "https://outlook.office.com/owa/?realm=mcgill.ca";
-  private final String MCGILL_OUTLOOK_SENT_EMAILS_URL =
-      "https://outlook.office.com/owa/?realm=mcgill.ca&path=/mail/sentitems";
 
-  private final String OUTLOOK_SIGN_IN =
-      "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
+  private final String OUTLOOK_SIGN_IN = "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
+
 
   private WebDriver driver;
 
@@ -48,8 +45,7 @@ public class StepDefinition {
     emailForm.sendKeys(username);
 
     // Next button to pass to password form
-    (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
+    (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
 
     WebElement passwordForm = (new WebDriverWait(driver, 10))
         .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
@@ -58,13 +54,10 @@ public class StepDefinition {
     passwordForm.sendKeys(password);
 
     // Sign in button, takes time to appear
-    (new WebDriverWait(driver, 15))
-        .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
-
+    (new WebDriverWait(driver, 15)).until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
 
     // Wait for the page to load and try to find the new email button
-    (new WebDriverWait(driver, 15))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
+    (new WebDriverWait(driver, 15)).until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
   }
 
   @And("^image at (.*) is attached$")
@@ -72,8 +65,8 @@ public class StepDefinition {
 
     // Attachment button
     (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector(".ms-Button-menuIcon.menuIcon-146[data-icon-name=ChevronDown]")))
+        .until(ExpectedConditions
+            .elementToBeClickable(By.cssSelector(".ms-Button-menuIcon.menuIcon-146[data-icon-name=ChevronDown]")))
         .click();
 
     System.out.println("Clicked attachment button");
@@ -105,25 +98,36 @@ public class StepDefinition {
     }
   }
 
-  @When("^they send an email to (.*)$")
-  public void sendEmail(String recipientEmail) {
-    WebElement email_field =
-        driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
+  @When("^they send an email to (.*) with subject (.*)$")
+  public void sendEmail(String recipientEmail, String subject) {
+    WebElement email_field = driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
     email_field.sendKeys(recipientEmail);
-    
-    driver.findElement(By.id("subjectLine0")).sendKeys("Subject");
 
-    (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions
-            .elementToBeClickable(By.cssSelector(".ms-Button-icon.icon-145[data-icon-name=Send]")))
+    driver.findElement(By.id("subjectLine0")).sendKeys(subject);
+
+    (new WebDriverWait(driver, 15)).until(
+        ExpectedConditions.presenceOfElementLocated(By.cssSelector(".ms-Button-icon.icon-145[data-icon-name=Send]")))
         .click();
-
+    System.out.println("Sent email");
 
   }
 
+  @Then("an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section")
+  public void checkSent(String recipientEmail, String subject) {
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
 
-  @Then("an email with recipient address (.*) with an attachment will appear in the \"sent\" section")
-  public void checkSent(String recipientEmail) {
+    WebElement most_recent_email = (new WebDriverWait(driver, 10)).until(ExpectedConditions
+        .presenceOfElementLocated(By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
+
+    String recipient_sent = most_recent_email.findElement(By.cssSelector("._3HQ_h7iVcVeOo03bOFpl__ > span")).getText();
+    String sent_subject = most_recent_email.findElement(By.cssSelector(".RKJYnFQ991LYsw_styUw > span")).getText();
+
+    if (recipient_sent.equals(recipientEmail) && subject.equals(sent_subject)) {
+      System.out.println("Successfully sent");
+    } else {
+      throw new cucumber.api.PendingException();
+    }
 
   }
 
@@ -158,7 +162,6 @@ public class StepDefinition {
       throw new cucumber.api.PendingException();
     }
   }
-
 
   // helper method to visit certain pages
   private void visitURL(String url) {
