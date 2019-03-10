@@ -8,6 +8,4 @@ node_modules
 .jsbeautifyrc
 
 .env
-.classpath
-.project
 .settings/
