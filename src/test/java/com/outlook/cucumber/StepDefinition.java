@@ -133,15 +133,37 @@ public class StepDefinition {
 
   @And("a large image at <imagePath> is attached")
   public void attachLargeImage(String path) {
-    JavascriptExecutor js = (JavascriptExecutor) driver;
-    js.executeScript("document.querySelector(\"button[autoid='_fce_6']\").click();");
 
-    /***********************
-     * Swap to directory where oversized image is located
-     ***********************/
+    // Attachment button
+    (new WebDriverWait(driver, 10))
+        .until(ExpectedConditions
+            .elementToBeClickable(By.cssSelector(".ms-Button-menuIcon.menuIcon-146[data-icon-name=ChevronDown]")))
+        .click();
+
+    System.out.println("Clicked attachment button");
+
+    WebElement thisCPButton = driver.findElements(By.className("label-193")).get(0);
+    thisCPButton.click();
+
+    Path relativePath = Paths.get("").toAbsolutePath();
+    String fullPath = relativePath.resolve(path).toString();
+
+    StringSelection ss = new StringSelection(fullPath);
+    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+    Robot robot;
     try {
-      Process p = Runtime.getRuntime().exec(path);
-    } catch (IOException e) {
+      robot = new Robot();
+      Thread.sleep(1000);
+      robot.keyPress(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_ENTER);
+      robot.keyRelease(KeyEvent.VK_ENTER);
+    } catch (AWTException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }

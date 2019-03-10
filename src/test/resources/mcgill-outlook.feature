@@ -17,7 +17,9 @@ Feature: Outlook
 		And a large image at <imagePath> is attached
 		When they send an email to <address> with subject <subject>
 		Then outlook throws a size error
-
+	Examples:
+		| 			username 			| password  | address |  subject		 						 | imagePath 											|
+		| ecse428@hotmail.com | 1234Test  | ecse428receive@hotmail.com |  testSubjectFailureSent428  | src/test/resources/failurePhoto.jpg |
 
 
 
