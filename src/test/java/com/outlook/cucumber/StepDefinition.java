@@ -3,7 +3,7 @@ package com.outlook.cucumber;
 import static io.github.bonigarcia.wdm.DriverManagerType.CHROME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import java.awt.AWTException;
+import static org.junit.Assert.fail;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
@@ -41,58 +41,61 @@ public class StepDefinition {
 
   @Given("^a user with username (.*) and password (.*) has an email draft open in the McGill Outlook Email page$")
   public void navigateToPage(String username, String password) {
-    visitURL(OUTLOOK_SIGN_IN);
+    try {
+      visitURL(OUTLOOK_SIGN_IN);
 
-    System.out.println("Signing In");
+      System.out.println("Signing In");
 
-    WebElement emailForm = (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("i0116")));
-    emailForm.sendKeys(username);
+      WebElement emailForm = (new WebDriverWait(driver, 10))
+          .until(ExpectedConditions.presenceOfElementLocated(By.id("i0116")));
+      emailForm.sendKeys(username);
 
-    // Next button to pass to password form
-    (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
+      // Next button to pass to password form
+      (new WebDriverWait(driver, 10))
+          .until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
 
-    WebElement passwordForm = (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
-    passwordForm.click();
-    passwordForm.clear();
-    passwordForm.sendKeys(password);
+      WebElement passwordForm = (new WebDriverWait(driver, 10))
+          .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
+      passwordForm.click();
+      passwordForm.clear();
+      passwordForm.sendKeys(password);
 
-    // Sign in button, takes time to appear
-    (new WebDriverWait(driver, 15))
-        .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
+      // Sign in button, takes time to appear
+      (new WebDriverWait(driver, 15))
+          .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
 
-    // Wait for the page to load and try to find the new email button
-    (new WebDriverWait(driver, 15))
-        .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
+      // Wait for the page to load and try to find the new email button
+      (new WebDriverWait(driver, 15))
+          .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
+    } catch (Exception e) {
+      System.out.print(e.getStackTrace());
+      fail(e.getMessage());
+
+      driver.close();
+    }
   }
 
   @And("^image at (.*) is attached$")
   public void attachImage(String path) {
-
-    // Attachment button
-    (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector(".ms-Button-menuIcon.menuIcon-147[data-icon-name=ChevronDown]")))
-        .click();
-
-    System.out.println("Clicked attachment button");
-
-    (new WebDriverWait(driver, 10)).until(
-        ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-ContextualMenu-itemText")));
-
-    WebElement thisCPButton =
-        driver.findElements(By.cssSelector(".ms-ContextualMenu-itemText")).get(0);
-    thisCPButton.click();
-
-    Path relativePath = Paths.get("").toAbsolutePath();
-    String fullPath = relativePath.resolve(path).toString();
-
-    StringSelection ss = new StringSelection(fullPath);
-    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
-    Robot robot;
     try {
+      // Attachment button
+      (new WebDriverWait(driver, 10))
+          .until(
+              ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
+          .click();
+
+      System.out.println("Clicked attachment button");
+
+      // Click browse this computer button
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
+          By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
+
+      Path relativePath = Paths.get("").toAbsolutePath();
+      String fullPath = relativePath.resolve(path).toString();
+
+      StringSelection ss = new StringSelection(fullPath);
+      Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+      Robot robot;
       robot = new Robot();
       Thread.sleep(1000);
       robot.keyPress(KeyEvent.VK_CONTROL);
@@ -102,116 +105,91 @@ public class StepDefinition {
       robot.keyPress(KeyEvent.VK_ENTER);
       robot.keyRelease(KeyEvent.VK_ENTER);
       Thread.sleep(1000);
-    } catch (AWTException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+    } catch (Exception e) {
+      System.out.print(e.getStackTrace());
+      fail(e.getMessage());
+
+      driver.close();
     }
   }
 
   @When("^they send an email to (.*) with subject (.*)$")
   public void sendEmail(String recipientEmail, String subject) {
-    WebElement email_field =
-        driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
-    email_field.sendKeys(recipientEmail);
+    try {
+      WebElement email_field =
+          driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
+      email_field.sendKeys(recipientEmail);
 
-    driver.findElement(By.id("subjectLine0")).sendKeys(subject);
+      driver.findElement(By.id("subjectLine0")).sendKeys(subject);
 
-    emailSendTime = LocalTime.now().format(formatter);
+      emailSendTime = LocalTime.now().format(formatter);
 
-    (new WebDriverWait(driver, 15)).until(ExpectedConditions
-        .presenceOfElementLocated(By.cssSelector(".ms-Button-icon.icon-146[data-icon-name=Send]")))
-        .click();
+      (new WebDriverWait(driver, 15)).until(
+          ExpectedConditions.presenceOfElementLocated(By.cssSelector(".ms-Button[name='Send']")))
+          .click();
 
-    System.out.println("Email sent");
+      System.out.println("Email sent");
+    } catch (Exception e) {
+      System.out.println(e.getStackTrace());
+      fail(e.getMessage());
+
+      driver.close();
+    }
   }
 
   @Then("an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section")
   public void checkSent(String recipientEmail, String subject) {
-    JavascriptExecutor js = (JavascriptExecutor) driver;
-    js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
-
     try {
       Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+
+      JavascriptExecutor js = (JavascriptExecutor) driver;
+      js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
+
+      WebElement most_recent_email =
+          (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+              By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
+
+      String recipient_sent = most_recent_email
+          .findElement(By.cssSelector("._3HQ_h7iVcVeOo03bOFpl__ > span")).getText();
+      String sent_subject =
+          most_recent_email.findElement(By.cssSelector(".RKJYnFQ991LYsw_styUw > span")).getText();
+
+      assertTrue(recipient_sent.equals(recipientEmail) && subject.equals(sent_subject));
+
+      String emailTimeStamp = (new WebDriverWait(driver, 10))
+          .until(ExpectedConditions
+              .presenceOfElementLocated(By.cssSelector("._33-Hq3-X20Ind6j6gvICV9")))
+          .getAttribute("title");
+
+      assertEquals(emailSendTime, emailTimeStamp);
+
+      System.out.println("Successfully Sent");
+    } catch (Exception e) {
+      System.out.println(e.getStackTrace());
+      fail(e.getMessage());
+    } finally {
+      driver.close();
     }
-    WebElement most_recent_email =
-        (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
-            By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
 
-    String recipient_sent =
-        most_recent_email.findElement(By.cssSelector("._3HQ_h7iVcVeOo03bOFpl__ > span")).getText();
-    String sent_subject =
-        most_recent_email.findElement(By.cssSelector(".RKJYnFQ991LYsw_styUw > span")).getText();
-
-    assertTrue(recipient_sent.equals(recipientEmail) && subject.equals(sent_subject));
-
-    String emailTimeStamp = (new WebDriverWait(driver, 10))
-        .until(
-            ExpectedConditions.presenceOfElementLocated(By.cssSelector("._33-Hq3-X20Ind6j6gvICV9")))
-        .getAttribute("title");
-
-    assertEquals(emailSendTime, emailTimeStamp);
-
-    System.out.println("Successfully Sent");
-    driver.close();
   }
 
-  @And("a large image at (.*) is attached")
-  public void attachLargeImage(String path) {
-
-    // Attachment button
-    (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.elementToBeClickable(
-            By.cssSelector(".ms-Button-menuIcon.menuIcon-146[data-icon-name=ChevronDown]")))
-        .click();
-
-    System.out.println("Clicked attachment button");
-
-    WebElement thisCPButton = driver.findElements(By.className("label-193")).get(0);
-    thisCPButton.click();
-
-    Path relativePath = Paths.get("").toAbsolutePath();
-    String fullPath = relativePath.resolve(path).toString();
-
-    StringSelection ss = new StringSelection(fullPath);
-    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
-    Robot robot;
-    try {
-      robot = new Robot();
-      Thread.sleep(1000);
-      robot.keyPress(KeyEvent.VK_CONTROL);
-      robot.keyPress(KeyEvent.VK_V);
-      robot.keyRelease(KeyEvent.VK_V);
-      robot.keyRelease(KeyEvent.VK_CONTROL);
-      robot.keyPress(KeyEvent.VK_ENTER);
-      robot.keyRelease(KeyEvent.VK_ENTER);
-    } catch (AWTException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+  @When("^they try to attach a large image from (.*)$")
+  public void attachLargeImage(String path) throws Exception {
+    attachImage(path);
   }
 
   @Then("^outlook throws a size error")
   public void checkError() {
-    WebElement attachButton = (new WebDriverWait(driver, 10))
-        .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("button[autoid=_av_2]")));
+    // try to find the error element
+    try {
+      WebElement errorElement = (new WebDriverWait(driver, 10))
+          .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".ms-Dialog-main")));
+      assertTrue(errorElement != null);
+    } catch (Exception e) {
+      System.out.println(e.getStackTrace());
+      fail(e.getMessage());
 
-    // If the attach button is disabled
-    if (!attachButton.isEnabled()) {
-      WebElement closePromptButton = (new WebDriverWait(driver, 10))
-          .until(ExpectedConditions.presenceOfElementLocated(By.className("_av_4 o365button")));
-      closePromptButton.click();
-      System.out.println("Error in Size detected. Closing attachment prompt");
-    } else {
-      throw new cucumber.api.PendingException();
+      driver.close();
     }
   }
 

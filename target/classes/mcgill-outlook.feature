@@ -14,8 +14,7 @@ Feature: Outlook
   	#Error flow
 	Scenario Outline: Adding in an image that exceeds the size limit
 		Given a user with username <username> and password <password> has an email draft open in the McGill Outlook Email page
-		And a large image at <imagePath> is attached
-		When they send an email to <address> with subject <subject>
+		When they try to attach a large image from <imagePath>
 		Then outlook throws a size error
 	Examples:
 		| 			username 			| password  | address |  subject		 						 | imagePath 											|
