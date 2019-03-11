@@ -3,17 +3,16 @@ package com.outlook.cucumber;
 import static io.github.bonigarcia.wdm.DriverManagerType.CHROME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-
-import cucumber.api.PendingException;
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -83,72 +82,73 @@ public class StepDefinition {
 
 
 
-    @Given("^a user with username (.*) and password (.*) has an existing email draft with image (.*)$")
-    public void navigateToDraft(String username, String password, String imagePath) throws InterruptedException, AWTException {
-        // Write code here that turns the phrase above into concrete actions
-        try{
-            navigateToNewEmail(username,password);
+  @Given("^a user with username (.*) and password (.*) has an existing email draft with image (.*)$")
+  public void navigateToDraft(String username, String password, String imagePath)
+      throws InterruptedException, AWTException {
+    // Write code here that turns the phrase above into concrete actions
+    try {
+      navigateToNewEmail(username, password);
 
-            // Attachment button
-            (new WebDriverWait(driver, 10))
-                    .until(
-                            ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
-                    .click();
+      // Attachment button
+      (new WebDriverWait(driver, 10))
+          .until(
+              ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
+          .click();
 
-            System.out.println("Clicked attachment button");
+      System.out.println("Clicked attachment button");
 
-            // Click browse this computer button
-            (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
-                    By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
+      // Click browse this computer button
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
+          By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
 
-            Path relativePath = Paths.get("").toAbsolutePath();
-            String fullPath = relativePath.resolve(imagePath).toString();
+      Path relativePath = Paths.get("").toAbsolutePath();
+      String fullPath = relativePath.resolve(imagePath).toString();
 
-            StringSelection ss = new StringSelection(fullPath);
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
-            Robot robot;
-            robot = new Robot();
-            Thread.sleep(1000);
-            robot.keyPress(KeyEvent.VK_CONTROL);
-            robot.keyPress(KeyEvent.VK_V);
-            robot.keyRelease(KeyEvent.VK_V);
-            robot.keyRelease(KeyEvent.VK_CONTROL);
-            robot.keyPress(KeyEvent.VK_ENTER);
-            robot.keyRelease(KeyEvent.VK_ENTER);
-            Thread.sleep(1000);
+      StringSelection ss = new StringSelection(fullPath);
+      Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+      Robot robot;
+      robot = new Robot();
+      Thread.sleep(1000);
+      robot.keyPress(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_ENTER);
+      robot.keyRelease(KeyEvent.VK_ENTER);
+      Thread.sleep(1000);
 
-            (new WebDriverWait(driver, 15)).until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div[title='Drafts']")))
-                    .click();
+      (new WebDriverWait(driver, 15))
+          .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div[title='Drafts']")))
+          .click();
 
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("document.querySelector('div[title=\"Drafts\"]').click()");
+      JavascriptExecutor js = (JavascriptExecutor) driver;
+      js.executeScript("document.querySelector('div[title=\"Drafts\"]').click()");
 
-            WebElement most_recent_draft =
-                    (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
-                            By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
-            most_recent_draft.click();
-            (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
-                    By.cssSelector("input[placeholder='Add a subject']")));
+      WebElement most_recent_draft =
+          (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+              By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
+      most_recent_draft.click();
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions
+          .presenceOfElementLocated(By.cssSelector("input[placeholder='Add a subject']")));
 
-        }catch(Exception e){
-            driver.close();
-            throw e;
-        }
+    } catch (Exception e) {
+      driver.close();
+      throw e;
     }
-
+  }
 
 
 
   @And("^image at (.*) is attached$")
   public void addImageAttachment(String path) throws Exception {
     System.out.println("Attempting to attach image..");
-    
-    //Attach the actual image to the email
+
+    // Attach the actual image to the email
     attachImage(path);
 
-    // Wait til the image attachment is visable in the email 
-    (new WebDriverWait(driver, 10)).until(ExpectedConditions
-        .visibilityOfElementLocated(By.cssSelector("._1RJtcqtrjg-k7PLpqrbSph")));
+    // Wait til the image attachment is visable in the email
+    (new WebDriverWait(driver, 10)).until(
+        ExpectedConditions.visibilityOfElementLocated(By.cssSelector("._1RJtcqtrjg-k7PLpqrbSph")));
 
     System.out.println("Image uploaded!");
   }
@@ -166,7 +166,7 @@ public class StepDefinition {
       // Get the time this email was sent and save it
       emailSendTime = LocalTime.now().format(formatter);
 
-      //Send the email
+      // Send the email
       (new WebDriverWait(driver, 15))
           .until(ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Send']")))
           .click();
@@ -181,13 +181,20 @@ public class StepDefinition {
   @Then("^an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section$")
   public void checkSent(String recipientEmail, String subject) throws Exception {
     try {
-      // Wait til the edit email box is gone, aka the email has been sent
-      (new WebDriverWait(driver, 10)).until(ExpectedConditions.invisibilityOfElementLocated(
-          By.cssSelector("div[title='Select an item to read']")));
-      
+      // Navigate to the sent items page
       JavascriptExecutor js = (JavascriptExecutor) driver;
       js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
 
+      // Refresh the page to get the latest sent emails
+      driver.navigate().refresh();
+
+      // Handles the "are you sure you want to refresh" prompt
+      WebDriverWait wait = new WebDriverWait(driver, 10);
+      Alert alertPrompt = wait.until(ExpectedConditions.alertIsPresent());
+
+      if (alertPrompt != null) {
+        alertPrompt.accept();
+      }
       WebElement most_recent_email =
           (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
               By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
@@ -240,7 +247,7 @@ public class StepDefinition {
       driver.get(url);
     }
   }
-  
+
   private void attachImage(String path) throws Exception {
     try {
       // Attempt to find the attach button and click it
@@ -267,7 +274,7 @@ public class StepDefinition {
       robot = new Robot();
       (new WebDriverWait(driver, 10)).until(ExpectedConditions.invisibilityOfElementLocated(
           By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']")));
-      
+
       robot.keyPress(KeyEvent.VK_CONTROL);
       robot.keyPress(KeyEvent.VK_V);
       robot.keyRelease(KeyEvent.VK_V);
@@ -276,7 +283,7 @@ public class StepDefinition {
       robot.keyRelease(KeyEvent.VK_ENTER);
 
     } catch (Exception e) {
-      //driver.close();
+      // driver.close();
       throw e;
     }
   }
