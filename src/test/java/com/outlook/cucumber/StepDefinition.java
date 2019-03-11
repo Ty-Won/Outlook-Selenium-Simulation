@@ -150,8 +150,8 @@ public class StepDefinition {
   public void checkSent(String recipientEmail, String subject) throws Exception {
     try {
       // Navigate to the sent items page
-      JavascriptExecutor js = (JavascriptExecutor) driver;
-      js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+          By.cssSelector("div[title='Sent Items']"))).click();
 
       // Refresh the page to get the latest sent emails
       driver.navigate().refresh();
