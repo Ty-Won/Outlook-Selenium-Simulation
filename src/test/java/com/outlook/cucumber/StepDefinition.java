@@ -4,14 +4,16 @@ import static io.github.bonigarcia.wdm.DriverManagerType.CHROME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import java.awt.Robot;
-import java.awt.Toolkit;
+
+import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+
+import cucumber.api.PendingException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -27,8 +29,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class StepDefinition {
 
-  private final String OUTLOOK_SIGN_IN =
-      "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
+  private final String OUTLOOK_SIGN_IN = "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
   private String emailSendTime;
   private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -39,11 +40,11 @@ public class StepDefinition {
     driver = new ChromeDriver();
   }
 
-  @Given("^a user with username (.*) and password (.*) has an email draft open in the McGill Outlook Email page$")
-  public void navigateToPage(String username, String password) {
+
+  @Given("^a user with username (.*) and password (.*) has a new email open in the Outlook Email page$")
+  public void navigateToNewEmail(String username, String password) {
     try {
       visitURL(OUTLOOK_SIGN_IN);
-
       System.out.println("Signing In");
 
       WebElement emailForm = (new WebDriverWait(driver, 10))
@@ -72,6 +73,64 @@ public class StepDefinition {
       throw e;
     }
   }
+
+
+
+    @Given("^a user with username (.*) and password (.*) has an existing email draft with image (.*)$")
+    public void navigateToDraft(String username, String password, String imagePath) throws InterruptedException, AWTException {
+        // Write code here that turns the phrase above into concrete actions
+        try{
+            navigateToNewEmail(username,password);
+
+            // Attachment button
+            (new WebDriverWait(driver, 10))
+                    .until(
+                            ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
+                    .click();
+
+            System.out.println("Clicked attachment button");
+
+            // Click browse this computer button
+            (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
+
+            Path relativePath = Paths.get("").toAbsolutePath();
+            String fullPath = relativePath.resolve(imagePath).toString();
+
+            StringSelection ss = new StringSelection(fullPath);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+            Robot robot;
+            robot = new Robot();
+            Thread.sleep(1000);
+            robot.keyPress(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_V);
+            robot.keyRelease(KeyEvent.VK_V);
+            robot.keyRelease(KeyEvent.VK_CONTROL);
+            robot.keyPress(KeyEvent.VK_ENTER);
+            robot.keyRelease(KeyEvent.VK_ENTER);
+            Thread.sleep(1000);
+
+            (new WebDriverWait(driver, 15)).until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div[title='Drafts']")))
+                    .click();
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript("document.querySelector('div[title=\"Drafts\"]').click()");
+
+            WebElement most_recent_draft =
+                    (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+                            By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
+            most_recent_draft.click();
+            (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+                    By.cssSelector("input[placeholder='Add a subject']")));
+
+        }catch(Exception e){
+            driver.close();
+            throw e;
+        }
+    }
+
+
+
 
   @And("^image at (.*) is attached$")
   public void attachImage(String path) throws Exception {
@@ -116,7 +175,7 @@ public class StepDefinition {
           driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
       email_field.sendKeys(recipientEmail);
 
-      driver.findElement(By.id("subjectLine0")).sendKeys(subject);
+      driver.findElement(By.cssSelector("input[placeholder='Add a subject']")).sendKeys(subject);
 
       emailSendTime = LocalTime.now().format(formatter);
 
@@ -131,30 +190,30 @@ public class StepDefinition {
     }
   }
 
-  @Then("an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section")
+
+  @Then("^an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section$")
   public void checkSent(String recipientEmail, String subject) throws Exception {
-    try {
-      Thread.sleep(1000);
+      try {
+          Thread.sleep(1000);
 
-      JavascriptExecutor js = (JavascriptExecutor) driver;
-      js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
+          JavascriptExecutor js = (JavascriptExecutor) driver;
+          js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
 
-      WebElement most_recent_email =
-          (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
-              By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
+          WebElement most_recent_email =
+                  (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(
+                          By.cssSelector("div[class='_1t7vHwGnGnpVspzC4A22UM'] div:nth-child(2)")));
 
-      String recipient_sent = most_recent_email
-          .findElement(By.cssSelector("._3HQ_h7iVcVeOo03bOFpl__ > span")).getText();
-      String sent_subject =
-          most_recent_email.findElement(By.cssSelector(".RKJYnFQ991LYsw_styUw > span")).getText();
+          String recipient_sent = most_recent_email
+                  .findElement(By.cssSelector("._3HQ_h7iVcVeOo03bOFpl__ > span")).getText();
+          String sent_subject =
+                  most_recent_email.findElement(By.cssSelector(".RKJYnFQ991LYsw_styUw > span")).getText();
 
-      assertTrue(recipient_sent.equals(recipientEmail) && subject.equals(sent_subject));
+          assertTrue(recipient_sent.equals(recipientEmail) && subject.equals(sent_subject));
 
-      String emailTimeStamp = (new WebDriverWait(driver, 10))
-          .until(ExpectedConditions
-              .presenceOfElementLocated(By.cssSelector("._33-Hq3-X20Ind6j6gvICV9")))
-          .getAttribute("title");
-
+          String emailTimeStamp = (new WebDriverWait(driver, 10))
+                  .until(ExpectedConditions
+                          .presenceOfElementLocated(By.cssSelector("._33-Hq3-X20Ind6j6gvICV9")))
+                  .getAttribute("title");
       assertEquals(emailSendTime, emailTimeStamp);
 
       System.out.println("Successfully Sent");
@@ -163,14 +222,46 @@ public class StepDefinition {
     } finally {
       driver.close();
     }
+
   }
 
-  @When("^they try to attach a large image from (.*)$")
-  public void attachLargeImage(String path) throws Exception {
-    attachImage(path);
+  @When("^user attempts to attach a large image from (.*)$")
+  public void attachLargeImage(String path) throws InterruptedException, AWTException {
+      try {
+          // Attachment button
+          (new WebDriverWait(driver, 10))
+                  .until(
+                          ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
+                  .click();
+
+          System.out.println("Clicked attachment button");
+
+          // Click browse this computer button
+          (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
+                  By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
+
+          Path relativePath = Paths.get("").toAbsolutePath();
+          String fullPath = relativePath.resolve(path).toString();
+
+          StringSelection ss = new StringSelection(fullPath);
+          Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+          Robot robot;
+          robot = new Robot();
+          Thread.sleep(1000);
+          robot.keyPress(KeyEvent.VK_CONTROL);
+          robot.keyPress(KeyEvent.VK_V);
+          robot.keyRelease(KeyEvent.VK_V);
+          robot.keyRelease(KeyEvent.VK_CONTROL);
+          robot.keyPress(KeyEvent.VK_ENTER);
+          robot.keyRelease(KeyEvent.VK_ENTER);
+          Thread.sleep(1000);
+      } catch (Exception e) {
+          driver.close();
+          throw e;
+      }
   }
 
-  @Then("^outlook throws a size error")
+  @Then("^outlook throws a size error$")
   public void checkError() {
     // try to find the error element
     try {
@@ -191,4 +282,7 @@ public class StepDefinition {
       driver.get(url);
     }
   }
+
+
 }
+
