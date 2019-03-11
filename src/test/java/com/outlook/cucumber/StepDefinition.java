@@ -26,13 +26,13 @@ import cucumber.api.java.en.When;
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class StepDefinition {
-
-  private final String OUTLOOK_SIGN_IN =
-      "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
+  // Used to make sure the email was sent correctly
   private String emailSendTime;
   private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-
   private WebDriver driver;
+  // Link to the outlook sign in page
+  private final String OUTLOOK_SIGN_IN =
+      "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=13&ct=1552110548&rver=7.0.6737.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fnlp%3d1%26RpsCsrfState%3d39c113d7-80fd-b660-3327-7f08e0f9b60e&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=90015";
 
   public StepDefinition() {
     WebDriverManager.getInstance(CHROME).setup();
@@ -44,25 +44,29 @@ public class StepDefinition {
     try {
       visitURL(OUTLOOK_SIGN_IN);
 
-      System.out.println("Signing In");
+      System.out.println("Attempting to sign in..");
 
+      // Fill in the sign in information
       WebElement emailForm = (new WebDriverWait(driver, 10))
           .until(ExpectedConditions.presenceOfElementLocated(By.id("i0116")));
       emailForm.sendKeys(username);
 
-      // Next button to pass to password form
+      // Next button to move on to password form
       (new WebDriverWait(driver, 10))
           .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
 
+      // Fill in password
       WebElement passwordForm = (new WebDriverWait(driver, 10))
           .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
       passwordForm.click();
       passwordForm.clear();
       passwordForm.sendKeys(password);
 
-      // Sign in button, takes time to appear
+      // Sign in button to move on to the next page
       (new WebDriverWait(driver, 15))
           .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
+
+      System.out.println("Signed in!");
 
       // Wait for the page to load and try to find the new email button
       (new WebDriverWait(driver, 15)).until(ExpectedConditions.elementToBeClickable(By.id("id__5")))
@@ -74,57 +78,38 @@ public class StepDefinition {
   }
 
   @And("^image at (.*) is attached$")
-  public void attachImage(String path) throws Exception {
-    try {
-      // Attachment button
-      (new WebDriverWait(driver, 10))
-          .until(
-              ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
-          .click();
+  public void addImageAttachment(String path) throws Exception {
+    System.out.println("Attempting to attach image..");
+    
+    //Attach the actual image to the email
+    attachImage(path);
 
-      System.out.println("Clicked attachment button");
+    // Wait til the image attachment is visable in the email 
+    (new WebDriverWait(driver, 10)).until(ExpectedConditions
+        .visibilityOfElementLocated(By.cssSelector("._1RJtcqtrjg-k7PLpqrbSph")));
 
-      // Click browse this computer button
-      (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
-          By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
-
-      Path relativePath = Paths.get("").toAbsolutePath();
-      String fullPath = relativePath.resolve(path).toString();
-
-      StringSelection ss = new StringSelection(fullPath);
-      Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
-      Robot robot;
-      robot = new Robot();
-      Thread.sleep(1000);
-      robot.keyPress(KeyEvent.VK_CONTROL);
-      robot.keyPress(KeyEvent.VK_V);
-      robot.keyRelease(KeyEvent.VK_V);
-      robot.keyRelease(KeyEvent.VK_CONTROL);
-      robot.keyPress(KeyEvent.VK_ENTER);
-      robot.keyRelease(KeyEvent.VK_ENTER);
-      Thread.sleep(1000);
-    } catch (Exception e) {
-      driver.close();
-      throw e;
-    }
+    System.out.println("Image uploaded!");
   }
 
   @When("^they send an email to (.*) with subject (.*)$")
   public void sendEmail(String recipientEmail, String subject) {
     try {
+      // Fill recipient field with receiver address
       WebElement email_field =
           driver.findElement(By.cssSelector(".ms-BasePicker-input.pickerInput_269bfa71"));
       email_field.sendKeys(recipientEmail);
 
+      // Fill the subject line
       driver.findElement(By.id("subjectLine0")).sendKeys(subject);
 
+      // Get the time this email was sent and save it
       emailSendTime = LocalTime.now().format(formatter);
 
+      //Send the email
       (new WebDriverWait(driver, 15))
           .until(ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Send']")))
           .click();
 
-      System.out.println("Email sent");
     } catch (Exception e) {
       driver.close();
       throw e;
@@ -134,8 +119,10 @@ public class StepDefinition {
   @Then("an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section")
   public void checkSent(String recipientEmail, String subject) throws Exception {
     try {
-      Thread.sleep(1000);
-
+      // Wait til the edit email box is gone, aka the email has been sent
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.invisibilityOfElementLocated(
+          By.cssSelector("div[title='Select an item to read']")));
+      
       JavascriptExecutor js = (JavascriptExecutor) driver;
       js.executeScript("document.querySelector('div[title=\"Sent Items\"]').click()");
 
@@ -189,6 +176,46 @@ public class StepDefinition {
     if (driver != null) {
       System.out.println("Visiting: " + url);
       driver.get(url);
+    }
+  }
+  
+  private void attachImage(String path) throws Exception {
+    try {
+      // Attempt to find the attach button and click it
+      (new WebDriverWait(driver, 10))
+          .until(
+              ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Attach']")))
+          .click();
+
+      // Click "browse this computer" button to select from where to upload the file
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.elementToBeClickable(
+          By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']"))).click();
+
+      // Get absolute path to file
+      Path relativePath = Paths.get("").toAbsolutePath();
+      String fullPath = relativePath.resolve(path).toString();
+
+      // Copy the path onto the clipboard in order to paste it into the windows file prompt
+      StringSelection ss = new StringSelection(fullPath);
+      Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
+
+      // Need to use robot to paste the path into the file explorer since Selenium has no control
+      // outside of the browser
+      Robot robot;
+      robot = new Robot();
+      (new WebDriverWait(driver, 10)).until(ExpectedConditions.invisibilityOfElementLocated(
+          By.cssSelector(".ms-ContextualMenu-link[name='Browse this computer']")));
+      
+      robot.keyPress(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_V);
+      robot.keyRelease(KeyEvent.VK_CONTROL);
+      robot.keyPress(KeyEvent.VK_ENTER);
+      robot.keyRelease(KeyEvent.VK_ENTER);
+
+    } catch (Exception e) {
+      //driver.close();
+      throw e;
     }
   }
 }
