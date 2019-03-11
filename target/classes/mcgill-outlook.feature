@@ -9,7 +9,7 @@ Feature: Outlook
 
 		Examples:
 			| username            | password | address                    | subject            | imagePath                   |
-			| ecse428@hotmail.com | 1234Test | ecse428receive@hotmail.com | testSubjectSent428 | src/test/ressources/cat.jpg |
+			| ecse428@hotmail.com | 1234Test | ecse428receive@hotmail.com | testSubjectSent428 | src/test/ressources/SuccessImages/cat.jpg |
 
 
 	#Alternative flow
@@ -19,7 +19,7 @@ Feature: Outlook
 		Then an email with an attachment sent to recipient address <address> with subject <subject> will appear in the "sent" section
 		Examples:
 			| username            | password | address                    | subject                 | imagePath                   |
-			| ecse428@hotmail.com | 1234Test | ecse428receive@hotmail.com | testDraftSubjectSent428 | src/test/ressources/cat.jpg |
+			| ecse428@hotmail.com | 1234Test | ecse428receive@hotmail.com | testDraftSubjectSent428 | src/test/ressources/SuccessImages/cat.jpg |
 
 	#Error flow
 	Scenario Outline: Adding in an image that exceeds the size limit
@@ -30,7 +30,7 @@ Feature: Outlook
 
 		Examples:
 			| username            | password | imagePath                            |
-			| ecse428@hotmail.com | 1234Test | src/test/ressources/failurePhoto.jpg |
+			| ecse428@hotmail.com | 1234Test | src/test/ressources/FailureImages/sky.jpg |
 
 
 
