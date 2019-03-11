@@ -52,7 +52,7 @@ public class StepDefinition {
 
       // Next button to pass to password form
       (new WebDriverWait(driver, 10))
-          .until(ExpectedConditions.presenceOfElementLocated(By.id("idSIButton9"))).click();
+          .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
 
       WebElement passwordForm = (new WebDriverWait(driver, 10))
           .until(ExpectedConditions.elementToBeClickable(By.id("i0118")));
@@ -65,18 +65,16 @@ public class StepDefinition {
           .until(ExpectedConditions.elementToBeClickable(By.id("idSIButton9"))).click();
 
       // Wait for the page to load and try to find the new email button
-      (new WebDriverWait(driver, 15))
-          .until(ExpectedConditions.presenceOfElementLocated(By.id("id__5"))).click();
+      (new WebDriverWait(driver, 15)).until(ExpectedConditions.elementToBeClickable(By.id("id__5")))
+          .click();
     } catch (Exception e) {
-      System.out.print(e.getStackTrace());
-      fail(e.getMessage());
-
       driver.close();
+      throw e;
     }
   }
 
   @And("^image at (.*) is attached$")
-  public void attachImage(String path) {
+  public void attachImage(String path) throws Exception {
     try {
       // Attachment button
       (new WebDriverWait(driver, 10))
@@ -106,10 +104,8 @@ public class StepDefinition {
       robot.keyRelease(KeyEvent.VK_ENTER);
       Thread.sleep(1000);
     } catch (Exception e) {
-      System.out.print(e.getStackTrace());
-      fail(e.getMessage());
-
       driver.close();
+      throw e;
     }
   }
 
@@ -124,21 +120,19 @@ public class StepDefinition {
 
       emailSendTime = LocalTime.now().format(formatter);
 
-      (new WebDriverWait(driver, 15)).until(
-          ExpectedConditions.presenceOfElementLocated(By.cssSelector(".ms-Button[name='Send']")))
+      (new WebDriverWait(driver, 15))
+          .until(ExpectedConditions.elementToBeClickable(By.cssSelector(".ms-Button[name='Send']")))
           .click();
 
       System.out.println("Email sent");
     } catch (Exception e) {
-      System.out.println(e.getStackTrace());
-      fail(e.getMessage());
-
       driver.close();
+      throw e;
     }
   }
 
   @Then("an email with an attachment sent to recipient address (.*) with subject (.*) will appear in the \"sent\" section")
-  public void checkSent(String recipientEmail, String subject) {
+  public void checkSent(String recipientEmail, String subject) throws Exception {
     try {
       Thread.sleep(1000);
 
@@ -165,12 +159,10 @@ public class StepDefinition {
 
       System.out.println("Successfully Sent");
     } catch (Exception e) {
-      System.out.println(e.getStackTrace());
-      fail(e.getMessage());
+      throw e;
     } finally {
       driver.close();
     }
-
   }
 
   @When("^they try to attach a large image from (.*)$")
@@ -186,9 +178,8 @@ public class StepDefinition {
           .until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".ms-Dialog-main")));
       assertTrue(errorElement != null);
     } catch (Exception e) {
-      System.out.println(e.getStackTrace());
-      fail(e.getMessage());
-
+      throw e;
+    } finally {
       driver.close();
     }
   }
